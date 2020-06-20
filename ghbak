@@ -16,7 +16,7 @@ GISTSSH   = "git@gist.github.com:{}.git"
 REPOHTTP  = "https://github.com/{}/{}.git"
 GISTHTTP  = "https://gist.github.com/{}.git"
 
-SAFE      = re.compile(r"[A-Za-z0-9-]+")
+SAFE      = re.compile(r"[A-Za-z0-9.-]+")
 CLONE     = "git clone --mirror -n".split()
 TODAY     = time.strftime("%Y%m%d")
 
