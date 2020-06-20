@@ -29,7 +29,7 @@ def gh_dir(user, gist = False):
 
 def get(url, token = None, verbose = False):
   if verbose: click.secho("GET " + url, fg = "blue")
-  hdrs = dict(Authorization = "token " + auth) if token else {}
+  hdrs = dict(Authorization = "token " + token) if token else {}
   resp = requests.get(url, headers = hdrs)
   resp.raise_for_status()
   return resp
