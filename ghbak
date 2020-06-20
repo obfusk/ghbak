@@ -8,7 +8,7 @@
 # Date        : 2020-06-20
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
-# Version     : v0.1.0
+# Version     : v0.1.2
 # License     : GPLv3+
 #
 # --                                                            ; }}}1
@@ -58,7 +58,7 @@ GET https://api.github.com/users/obfusk/gists
 GET https://api.github.com/...
 cloning ... gists...
 ==> gist obfusk | 208597ccc64bf9b436ed | python equivalent of ruby's binding.pry
-$ cd .../obfusk/github
+$ cd .../obfusk/gist
 $ git clone --mirror -n https://gist.github.com/208597ccc64bf9b436ed.git 208597ccc64bf9b436ed.git
 ...
 <BLANKLINE>
@@ -70,7 +70,7 @@ backed up gists: ...
 
 # TODO: backup issue data etc.
 
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 import os, re, subprocess, sys, time
 
@@ -79,6 +79,9 @@ from pathlib import Path
 import click, requests
 
 API       = "https://api.github.com"
+
+USER      = "/user"
+MYREPOS   = "/user/repos?type=owner"
 
 REPOS     = "/users/{}/repos"
 GISTS     = "/users/{}/gists"
@@ -111,18 +114,23 @@ def get(url, token = None, verbose = False):
   resp.raise_for_status()
   return resp
 
-def get_paginated(url, *a, **kw):
+def get_paginated(url, **kw):
   while url:
-    resp  = get(url, *a, **kw)
+    resp  = get(url, **kw)
     url   = resp.links.get("next", {}).get("url")
     for x in resp.json(): yield x
 
-def get_repos(user, *a, **kw):
-  for repo in get_paginated(API + REPOS.format(user), *a, **kw):
+def get_repos(user, **kw):
+  token = kw.get("token")
+  if token and user == get(API + USER, token).json()["login"]:
+    endpt = MYREPOS
+  else:
+    endpt = REPOS.format(user)
+  for repo in get_paginated(API + endpt, **kw):
     yield { k: v for k, v in repo.items() if k in REPOKEYS }
 
-def get_gists(user, *a, **kw):
-  for gist in get_paginated(API + GISTS.format(user), *a, **kw):
+def get_gists(user, **kw):
+  for gist in get_paginated(API + GISTS.format(user), **kw):
     yield { k: v for k, v in gist.items() if k in GISTKEYS }
 
 
@@ -161,7 +169,7 @@ def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
         user, gist["id"], gist["description"]
       ), fg = "red")
     url = (GISTSSH if ssh else GISTHTTP).format(gist["id"])
-    clone(gh_dir(user), gist["id"], url, verbose, dry)
+    clone(gh_dir(user, True), gist["id"], url, verbose, dry)
   return len(gists)
 
 @click.command(help = """
