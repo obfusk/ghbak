@@ -51,32 +51,34 @@ def clone(parent, name, url, verbose = False):
   if not safe_name(name): raise Error("unsafe name: " + name)
   if path.exists(): raise Error("path already exists: " + path)
   path.parent.mkdir(parents = True, exist_ok = True)
-  cmd = ["echo"] + CLONE + [url, name]
+  cmd = ["echo"] + CLONE + [url, name + ".git"]
   if verbose:
     click.secho("$ cd " + str(path.parent), fg = "blue")
     click.secho("$ " + " ".join(cmd), fg = "blue")
   subprocess.run(cmd, cwd = path.parent, check = True)
 
 def clone_repos(user, token = None, ssh = False, verbose = False):
-  if verbose: click.secho("cloning repos...", fg = "yellow")
-  repos = list(get_repos(user, token = token, verbose = verbose))
+  repos = sorted(get_repos(user, token = token, verbose = verbose))
+  if verbose:
+    click.secho("cloning {} repos...".format(len(repos)), fg = "yellow")
   for repo in repos:
     if verbose:
       click.secho("==> repo {}/{} | {}".format(
         user, repo["name"], repo["description"]
-      ), fg = "magenta")
+      ), fg = "red")
     url = (REPOSSH if ssh else REPOHTTP).format(user, repo["name"])
     clone(gh_dir(user), repo["name"], url, verbose)
   return len(repos)
 
 def clone_gists(user, token = None, ssh = False, verbose = False):
-  if verbose: click.secho("cloning gists...", fg = "yellow")
-  gists = list(get_gists(user, token = token, verbose = verbose))
+  gists = sorted(get_gists(user, token = token, verbose = verbose))
+  if verbose:
+    click.secho("cloning {} gists...".format(len(gists)), fg = "yellow")
   for gist in gists:
     if verbose:
       click.secho("==> gist {} | {} | {}".format(
         user, gist["id"], gist["description"]
-      ), fg = "magenta")
+      ), fg = "red")
     url = (GISTSSH if ssh else GISTHTTP).format(gist["id"])
     clone(gh_dir(user), gist["id"], url, verbose)
   return len(gists)
@@ -90,16 +92,15 @@ def clone_gists(user, token = None, ssh = False, verbose = False):
 @click.argument("user")
 def cli(user, repos, gists, auth, **kw):
   verbose = kw["verbose"]
-  if verbose: click.secho("user: " + user, fg = "red")
+  if verbose: click.secho("user: " + user, fg = "yellow")
   token = click.prompt("token", hide_input = True).strip() if auth else None
   stats = {}
   if repos: stats["repos"] = clone_repos(user, token, **kw)
   if gists: stats["gists"] = clone_gists(user, token, **kw)
-  if verbose:
-    click.secho("\n=== summary ===\n", fg = "green")
-    for x in "repos gists".split():
-      if stats[x]:
-        click.secho("  #{}: {}".format(x, stats[x]), fg = "red")
+  if verbose: click.secho("\n=== summary ===\n", fg = "green")
+  for x in "repos gists".split():
+    if stats[x]:
+      click.secho("backed up {}: {}".format(x, stats[x]), fg = "yellow")
 
 if __name__ == "__main__":
   cli()
