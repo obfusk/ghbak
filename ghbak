@@ -16,13 +16,12 @@ GISTSSH   = "git@gist.github.com:{}.git"
 REPOHTTP  = "https://github.com/{}/{}.git"
 GISTHTTP  = "https://gist.github.com/{}.git"
 
-SAFE      = re.compile(r"[A-Za-z0-9.-]+")
 CLONE     = "git clone --mirror -n".split()
 TODAY     = time.strftime("%Y%m%d")
 
 class Error(RuntimeError): pass
 
-def safe_name(name): return SAFE.fullmatch(name)
+def safe_name(name): return "/" not in name
 
 def gh_dir(user, gist = False):
   return Path(TODAY) / user / ("gist" if gist else "github")
