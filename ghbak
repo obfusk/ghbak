@@ -58,7 +58,8 @@ def clone(parent, name, url, verbose = False):
   subprocess.run(cmd, cwd = path.parent, check = True)
 
 def clone_repos(user, token = None, ssh = False, verbose = False):
-  repos = sorted(get_repos(user, token = token, verbose = verbose))
+  repos = sorted(get_repos(user, token = token, verbose = verbose),
+                 key = lambda repo: repo["name"])
   if verbose:
     click.secho("cloning {} repos...".format(len(repos)), fg = "yellow")
   for repo in repos:
@@ -71,7 +72,8 @@ def clone_repos(user, token = None, ssh = False, verbose = False):
   return len(repos)
 
 def clone_gists(user, token = None, ssh = False, verbose = False):
-  gists = sorted(get_gists(user, token = token, verbose = verbose))
+  gists = sorted(get_gists(user, token = token, verbose = verbose),
+                 key = lambda gist: gist["id"])
   if verbose:
     click.secho("cloning {} gists...".format(len(gists)), fg = "yellow")
   for gist in gists:
