@@ -45,17 +45,17 @@ def get_repos(user, *a, **kw):
 def get_gists(user, *a, **kw):
   return get_paginated(API + GISTS.format(user), *a, **kw)
 
-# TODO
 def clone(parent, name, url, verbose = False):
   path = Path(parent) / name
   if not safe_name(name): raise Error("unsafe name: " + name)
   if path.exists(): raise Error("path already exists: " + path)
   path.parent.mkdir(parents = True, exist_ok = True)
-  cmd = ["echo"] + CLONE + [url, name + ".git"]
+  cmd = CLONE + [url, name + ".git"]
   if verbose:
     click.secho("$ cd " + str(path.parent), fg = "blue")
     click.secho("$ " + " ".join(cmd), fg = "blue")
   subprocess.run(cmd, cwd = path.parent, check = True)
+  time.sleep(1)
 
 def clone_repos(user, token = None, ssh = False, verbose = False):
   repos = sorted(get_repos(user, token = token, verbose = verbose),
@@ -101,7 +101,7 @@ def cli(user, repos, gists, auth, **kw):
   if gists: stats["gists"] = clone_gists(user, token, **kw)
   if verbose: click.secho("\n=== summary ===\n", fg = "green")
   for x in "repos gists".split():
-    if stats[x]:
+    if x in stats:
       click.secho("backed up {}: {}".format(x, stats[x]), fg = "yellow")
 
 if __name__ == "__main__":
