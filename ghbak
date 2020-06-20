@@ -94,8 +94,8 @@ def cli(user, repos, gists, auth, **kw):
   if verbose: click.secho("user: " + user, fg = "red")
   token = click.prompt("token", hide_input = True).strip() if auth else None
   stats = {}
-  if repos: stats["repos"] = clone_repos(user, token, ssh, verbose)
-  if gists: stats["gists"] = clone_gists(user, token, ssh, verbose)
+  if repos: stats["repos"] = clone_repos(user, token, **kw)
+  if gists: stats["gists"] = clone_gists(user, token, **kw)
   if verbose:
     click.secho("\n=== summary ===\n", fg = "green")
     for x in "repos gists".split():
