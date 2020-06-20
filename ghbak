@@ -1,12 +1,85 @@
 #!/usr/bin/python3
+# encoding: utf-8
 
-import re, subprocess, sys, time
+# --                                                            ; {{{1
+#
+# File        : ghbak
+# Maintainer  : Felix C. Stegerman <flx@obfusk.net>
+# Date        : 2020-06-20
+#
+# Copyright   : Copyright (C) 2020  Felix C. Stegerman
+# Version     : v0.1.0
+# License     : GPLv3+
+#
+# --                                                            ; }}}1
+
+                                                                # {{{1
+r"""
+
+ghbak - github backup
+
+>>> run = lambda a: cli(args = a.split(), standalone_mode = False)
+
+>>> run("--verbose --repos --ssh --dry obfusk") # doctest: +ELLIPSIS
+user: obfusk
+...
+GET https://api.github.com/users/obfusk/repos
+GET https://api.github.com/...
+cloning ... repos...
+==> repo obfusk/bash-cheatsheet | bash cheat sheet
+$ cd .../obfusk/github
+$ git clone --mirror -n git@github.com:obfusk/bash-cheatsheet.git bash-cheatsheet.git
+...
+==> repo obfusk/koneko | koneko - a concatenative not-quite-lisp for kittens
+$ cd .../obfusk/github/koneko.git
+$ git remote update
+...
+==> repo obfusk/m | m - minimalistic media manager
+$ cd .../obfusk/github
+$ git clone --mirror -n git@github.com:obfusk/m.git m.git
+...
+==> repo obfusk/map.sh | map.sh - map/filter for bash
+$ cd .../obfusk/github
+$ git clone --mirror -n git@github.com:obfusk/map.sh.git map.sh.git
+...
+==> repo obfusk/sokobang | sokobang - sokoban puzzle w/ bigbang.coffee
+$ cd .../obfusk/github
+$ git clone --mirror -n git@github.com:obfusk/sokobang.git sokobang.git
+...
+<BLANKLINE>
+=== summary ===
+<BLANKLINE>
+backed up repos: ...
+
+>>> run("--verbose --gists --dry obfusk") # doctest: +ELLIPSIS
+user: obfusk
+...
+GET https://api.github.com/users/obfusk/gists
+GET https://api.github.com/...
+cloning ... gists...
+==> gist obfusk | 208597ccc64bf9b436ed | python equivalent of ruby's binding.pry
+$ cd .../obfusk/github
+$ git clone --mirror -n https://gist.github.com/208597ccc64bf9b436ed.git 208597ccc64bf9b436ed.git
+...
+<BLANKLINE>
+=== summary ===
+<BLANKLINE>
+backed up gists: ...
+
+"""                                                             # }}}1
+
+# TODO: backup issue data etc.
+
+__version__ = "0.1.0"
+
+import os, re, subprocess, sys, time
 
 from pathlib import Path
 
 import click, requests
 
 API       = "https://api.github.com"
+
 REPOS     = "/users/{}/repos"
 GISTS     = "/users/{}/gists"
 
@@ -17,6 +90,11 @@ REPOHTTP  = "https://github.com/{}/{}.git"
 GISTHTTP  = "https://gist.github.com/{}.git"
 
 CLONE     = "git clone --mirror -n".split()
+UPDATE    = "git remote update".split()
+
+REPOKEYS  = "name description".split()
+GISTKEYS  = "id description".split()
+
 TODAY     = time.strftime("%Y%m%d")
 
 class Error(RuntimeError): pass
@@ -40,26 +118,29 @@ def get_paginated(url, *a, **kw):
     for x in resp.json(): yield x
 
 def get_repos(user, *a, **kw):
-  return get_paginated(API + REPOS.format(user), *a, **kw)
+  for repo in get_paginated(API + REPOS.format(user), *a, **kw):
+    yield { k: v for k, v in repo.items() if k in REPOKEYS }
 
 def get_gists(user, *a, **kw):
-  return get_paginated(API + GISTS.format(user), *a, **kw)
+  for gist in get_paginated(API + GISTS.format(user), *a, **kw):
+    yield { k: v for k, v in gist.items() if k in GISTKEYS }
 
-def clone(parent, name, url, verbose = False):
-  path = Path(parent) / name
+
+def clone(parent, name, url, verbose = False, dry = False):
+  path = Path(parent) / (name + ".git")
   if not safe_name(name): raise Error("unsafe name: " + name)
-  if path.exists(): raise Error("path already exists: " + path)
-  path.parent.mkdir(parents = True, exist_ok = True)
-  cmd = CLONE + [url, name + ".git"]
+  if not dry: path.parent.mkdir(parents = True, exist_ok = True)
+  new = not path.exists()
+  cmd = (CLONE + [url, path.name]) if new else UPDATE
+  cwd = path.parent if new else path
   if verbose:
-    click.secho("$ cd " + str(path.parent), fg = "blue")
+    click.secho("$ cd " + str(cwd), fg = "blue")
     click.secho("$ " + " ".join(cmd), fg = "blue")
-  subprocess.run(cmd, cwd = path.parent, check = True)
-  time.sleep(1)
+  if not dry:
+    subprocess.run(cmd, cwd = cwd, check = True)
+    time.sleep(1)
 
-def clone_repos(user, token = None, ssh = False, verbose = False):
-  repos = sorted(get_repos(user, token = token, verbose = verbose),
-                 key = lambda repo: repo["name"])
+def clone_repos(repos, user, ssh = False, verbose = False, dry = False):
   if verbose:
     click.secho("cloning {} repos...".format(len(repos)), fg = "yellow")
   for repo in repos:
@@ -68,12 +149,10 @@ def clone_repos(user, token = None, ssh = False, verbose = False):
         user, repo["name"], repo["description"]
       ), fg = "red")
     url = (REPOSSH if ssh else REPOHTTP).format(user, repo["name"])
-    clone(gh_dir(user), repo["name"], url, verbose)
+    clone(gh_dir(user), repo["name"], url, verbose, dry)
   return len(repos)
 
-def clone_gists(user, token = None, ssh = False, verbose = False):
-  gists = sorted(get_gists(user, token = token, verbose = verbose),
-                 key = lambda gist: gist["id"])
+def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
   if verbose:
     click.secho("cloning {} gists...".format(len(gists)), fg = "yellow")
   for gist in gists:
@@ -82,27 +161,59 @@ def clone_gists(user, token = None, ssh = False, verbose = False):
         user, gist["id"], gist["description"]
       ), fg = "red")
     url = (GISTSSH if ssh else GISTHTTP).format(gist["id"])
-    clone(gh_dir(user), gist["id"], url, verbose)
+    clone(gh_dir(user), gist["id"], url, verbose, dry)
   return len(gists)
 
-@click.command(help = "github backup")
-@click.option("--repos", is_flag = True, help = "clone repos")
-@click.option("--gists", is_flag = True, help = "clone gists")
-@click.option("--auth" , is_flag = True, help = "authenticate")
-@click.option("--ssh"  , is_flag = True, help = "clone using ssh")
-@click.option("-v", "--verbose", is_flag = True)
+@click.command(help = """
+    ghbak - github backup
+
+    Clone (or update) github repos and/or gists to
+    ./{YYYYMMDD}/{github_username}/github/{repo_name}.git and
+    ./{YYYYMMDD}/{github_username}/gist/{gist_id}.git respectively.
+""")
+@click.option("--repos", is_flag = True, help = "Clone repos.")
+@click.option("--gists", is_flag = True, help = "Clone gists.")
+@click.option("--auth" , is_flag = True,
+  help = "Prompt for authentication token; otherwise uses" +
+         " $GITHUB_TOKEN -- if set -- or no authentication.")
+@click.option("--ssh"  , is_flag = True, help = "Clone using SSH.")
+@click.option("--dry", "--dry-run", is_flag = True,
+              help = "Dry run: query api but don't clone/update.")
+@click.option("-v", "--verbose", is_flag = True, help = "Be verbose.")
+@click.version_option(__version__)
 @click.argument("user")
-def cli(user, repos, gists, auth, **kw):
+@click.pass_context
+def cli(ctx, user, repos, gists, auth, **kw):
   verbose = kw["verbose"]
+  if user == "__test__": return test(ctx, verbose)
   if verbose: click.secho("user: " + user, fg = "yellow")
-  token = click.prompt("token", hide_input = True).strip() if auth else None
+  if auth:
+    token = click.prompt("token", hide_input = True).strip()
+  else:
+    token = os.environ.get("GITHUB_TOKEN") or None
+    if verbose:
+      click.secho("token $GITHUB_TOKEN" if token else "no token")
+  if repos:
+    repodata = sorted(get_repos(user, token = token, verbose = verbose),
+                      key = lambda repo: repo["name"])
+  if gists:
+    gistdata = sorted(get_gists(user, token = token, verbose = verbose),
+                      key = lambda gist: gist["id"])
+  del token
   stats = {}
-  if repos: stats["repos"] = clone_repos(user, token, **kw)
-  if gists: stats["gists"] = clone_gists(user, token, **kw)
+  if repos: stats["repos"] = clone_repos(repodata, user, **kw)
+  if gists: stats["gists"] = clone_gists(gistdata, user, **kw)
   if verbose: click.secho("\n=== summary ===\n", fg = "green")
   for x in "repos gists".split():
     if x in stats:
       click.secho("backed up {}: {}".format(x, stats[x]), fg = "yellow")
+
+def test(ctx, verbose = False):
+  from doctest import testmod
+  from click.testing import CliRunner
+  with CliRunner().isolated_filesystem():
+    (Path(gh_dir("obfusk")) / "koneko.git").mkdir(parents = True)
+    if testmod(verbose = verbose)[0]: ctx.exit(1)
 
 if __name__ == "__main__":
   cli()
