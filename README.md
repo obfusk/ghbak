@@ -18,8 +18,8 @@
 ghbak - github backup
 
 Clone (or update) github repos and/or gists to
-./{YYYYMMDD}/{github_username}/github/{repo_name}.git and
-./{YYYYMMDD}/{github_username}/gist/{gist_id}.git respectively.
+`./{YYYYMMDD}/{github_username}/github/{repo_name}.git` and
+`./{YYYYMMDD}/{github_username}/gist/{gist_id}.git` respectively.
 
 ## Examples
 
