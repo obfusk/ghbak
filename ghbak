@@ -144,7 +144,7 @@ def clone(parent, name, url, verbose = False, dry = False):
     click.secho("$ cd " + str(cwd), fg = "blue")
     click.secho("$ " + " ".join(cmd), fg = "blue")
   if not dry:
-    subprocess.run(cmd, cwd = cwd, check = True)
+    subprocess.run(cmd, cwd = str(cwd), check = True)
     time.sleep(1)
 
 def clone_repos(repos, user, ssh = False, verbose = False, dry = False):
