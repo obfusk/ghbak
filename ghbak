@@ -185,7 +185,7 @@ def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
   help = "Prompt for authentication token; otherwise uses" +
          " $GITHUB_TOKEN -- if set -- or no authentication.")
 @click.option("--ssh"  , is_flag = True, help = "Clone using SSH.")
-@click.option("--dry", "--dry-run", is_flag = True,
+@click.option("--dry", "--dry-run", "dry", is_flag = True,
               help = "Dry run: query api but don't clone/update.")
 @click.option("-v", "--verbose", is_flag = True, help = "Be verbose.")
 @click.version_option(__version__)
