@@ -133,7 +133,6 @@ def get_gists(user, **kw):
   for gist in get_paginated(API + GISTS.format(user), **kw):
     yield { k: v for k, v in gist.items() if k in GISTKEYS }
 
-
 def clone(parent, name, url, verbose = False, dry = False):
   path = Path(parent) / (name + ".git")
   if not safe_name(name): raise Error("unsafe name: " + name)
@@ -173,11 +172,11 @@ def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
   return len(gists)
 
 @click.command(help = """
-    ghbak - github backup
+  ghbak - github backup
 
-    Clone (or update) github repos and/or gists to
-    ./{YYYYMMDD}/{github_username}/github/{repo_name}.git and
-    ./{YYYYMMDD}/{github_username}/gist/{gist_id}.git respectively.
+  Clone (or update) github repos and/or gists to
+  ./{YYYYMMDD}/{github_username}/github/{repo_name}.git and
+  ./{YYYYMMDD}/{github_username}/gist/{gist_id}.git respectively.
 """)
 @click.option("--repos", is_flag = True, help = "Clone repos.")
 @click.option("--gists", is_flag = True, help = "Clone gists.")
