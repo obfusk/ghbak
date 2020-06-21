@@ -215,8 +215,8 @@ def cli(ctx, user, repos, gists, issues, auth, **kw):
     gistdata = sorted(get_gists(user, token = token, verbose = verbose),
                       key = lambda gist: gist["id"])
   if repos:
-    clone_repos(repodata, user, **kw)
     if issues: save_issues(user, repodata, token, verbose, kw["dry"])
+    clone_repos(repodata, user, **kw)
   if gists:
     clone_gists(gistdata, user, **kw)
   if verbose: click.secho("\n=== summary ===\n", fg = "green")
