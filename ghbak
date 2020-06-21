@@ -23,7 +23,6 @@ ghbak - github backup
 >>> run("--verbose --repos --ssh --dry obfusk") # doctest: +ELLIPSIS
 user: obfusk
 ...
-GET https://api.github.com/users/obfusk/repos
 GET https://api.github.com/...
 cloning ... repos...
 ==> repo obfusk/bash-cheatsheet | bash cheat sheet
@@ -68,11 +67,9 @@ backed up gists: ...
 
 """                                                             # }}}1
 
-# TODO: backup issue data etc.
-
 __version__ = "0.1.2"
 
-import os, re, subprocess, sys, time
+import json, os, re, subprocess, sys, time
 
 from pathlib import Path
 
@@ -85,6 +82,7 @@ MYREPOS   = "/user/repos?type=owner"
 
 REPOS     = "/users/{}/repos"
 GISTS     = "/users/{}/gists"
+ISSUES    = "/repos/{}/{}/issues?state=all"
 
 REPOSSH   = "git@github.com:{}/{}.git"
 GISTSSH   = "git@gist.github.com:{}.git"
@@ -102,7 +100,9 @@ TODAY     = time.strftime("%Y%m%d")
 
 class Error(RuntimeError): pass
 
-def safe_name(name): return "/" not in name
+def safe_path(parent, name, suffix):
+  if "/" in name: raise Error("unsafe name: " + name)
+  return Path(parent) / (name + suffix)
 
 def gh_dir(user, gist = False):
   return Path(TODAY) / user / ("gist" if gist else "github")
@@ -134,8 +134,7 @@ def get_gists(user, **kw):
     yield { k: v for k, v in gist.items() if k in GISTKEYS }
 
 def clone(parent, name, url, verbose = False, dry = False):
-  path = Path(parent) / (name + ".git")
-  if not safe_name(name): raise Error("unsafe name: " + name)
+  path = safe_path(parent, name, ".git")
   if not dry: path.parent.mkdir(parents = True, exist_ok = True)
   new = not path.exists()
   cmd = (CLONE + [url, path.name]) if new else UPDATE
@@ -157,7 +156,6 @@ def clone_repos(repos, user, ssh = False, verbose = False, dry = False):
       ), fg = "red")
     url = (REPOSSH if ssh else REPOHTTP).format(user, repo["name"])
     clone(gh_dir(user), repo["name"], url, verbose, dry)
-  return len(repos)
 
 def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
   if verbose:
@@ -169,7 +167,15 @@ def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
       ), fg = "red")
     url = (GISTSSH if ssh else GISTHTTP).format(gist["id"])
     clone(gh_dir(user, True), gist["id"], url, verbose, dry)
-  return len(gists)
+
+def save_issues(user, repos, token, verbose, dry):
+  for repo in repos:
+    name = repo["name"]
+    data = get_paginated(API + ISSUES.format(user, name),
+                         token = token, verbose = verbose)
+    text = json.dumps(list(data))
+    path = safe_path(gh_dir(user), name, "-issues.json")
+    if not dry: path.write_text(text)
 
 @click.command(help = """
   ghbak - github backup
@@ -180,6 +186,8 @@ def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
 """)
 @click.option("--repos", is_flag = True, help = "Clone repos.")
 @click.option("--gists", is_flag = True, help = "Clone gists.")
+@click.option("--issues", is_flag = True,
+              help = "Save repo issues as JSON.")
 @click.option("--auth" , is_flag = True,
   help = "Prompt for authentication token; otherwise uses" +
          " $GITHUB_TOKEN -- if set -- or no authentication.")
@@ -190,7 +198,7 @@ def clone_gists(gists, user, ssh = False, verbose = False, dry = False):
 @click.version_option(__version__)
 @click.argument("user")
 @click.pass_context
-def cli(ctx, user, repos, gists, auth, **kw):
+def cli(ctx, user, repos, gists, issues, auth, **kw):
   verbose = kw["verbose"]
   if user == "__test__": return test(ctx, verbose)
   if verbose: click.secho("user: " + user, fg = "yellow")
@@ -206,14 +214,16 @@ def cli(ctx, user, repos, gists, auth, **kw):
   if gists:
     gistdata = sorted(get_gists(user, token = token, verbose = verbose),
                       key = lambda gist: gist["id"])
-  del token
-  stats = {}
-  if repos: stats["repos"] = clone_repos(repodata, user, **kw)
-  if gists: stats["gists"] = clone_gists(gistdata, user, **kw)
+  if repos:
+    clone_repos(repodata, user, **kw)
+    if issues: save_issues(user, repodata, token, verbose, kw["dry"])
+  if gists:
+    clone_gists(gistdata, user, **kw)
   if verbose: click.secho("\n=== summary ===\n", fg = "green")
-  for x in "repos gists".split():
-    if x in stats:
-      click.secho("backed up {}: {}".format(x, stats[x]), fg = "yellow")
+  if repos:
+    click.secho("backed up repos: {}".format(len(repodata)), fg = "yellow")
+  if gists:
+    click.secho("backed up gists: {}".format(len(gistdata)), fg = "yellow")
 
 def test(ctx, verbose = False):
   from doctest import testmod
