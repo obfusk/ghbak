@@ -67,9 +67,14 @@ backed up gists: ...
 
 """                                                             # }}}1
 
+# TODO:
+# * save issue/gist comments?!
+# * pypi package?
+# * debian package?
+
 __version__ = "0.1.2"
 
-import json, os, re, subprocess, sys, time
+import json, os, re, subprocess, time
 
 from pathlib import Path
 
@@ -182,12 +187,28 @@ def save_issues(basedir, user, repos, token, verbose, dry):
       tmp.write_text(text)
       tmp.rename(path)
 
+# workaround :(
+wrap_text = click.formatting.wrap_text
+click.formatting.wrap_text = lambda t, *a, **kw: \
+  re.sub(r"^(.)", r"  \1", t, flags = re.M) if "ghbak - github backup" in t \
+    else wrap_text(t, *a, **kw)
+
 @click.command(help = """
   ghbak - github backup
 
-  Clone (or update) github repos and/or gists to
-  ./{YYYYMMDD}/{github_username}/github/{repo_name}.git and
-  ./{YYYYMMDD}/{github_username}/gist/{gist_id}.git respectively.
+  Mirror (or update) github repos (and issues) and/or gists to:
+
+  {basedir}/
+    {github_username}/
+      github/
+        {repo_name}.git
+        {repo_name}-issues.json
+        ...
+      gist/
+        {gist_id}.git
+        ...
+
+  The base directory defaults to ./{YYYYMMDD} (the current date).
 """)
 @click.option("--repos", is_flag = True, help = "Clone repos.")
 @click.option("--gists", is_flag = True, help = "Clone gists.")
@@ -195,8 +216,8 @@ def save_issues(basedir, user, repos, token, verbose, dry):
               help = "Save repo issues as JSON.")
 @click.option("--auth" , is_flag = True,
   help = "Prompt for authentication token; otherwise uses" +
-         " $GITHUB_TOKEN -- if set -- or no authentication.")
-@click.option("--ssh"  , is_flag = True, help = "Clone using SSH.")
+         " $GITHUB_TOKEN if set, or no authentication.")
+@click.option("--ssh", is_flag = True, help = "Clone using SSH.")
 @click.option("--dry", "--dry-run", "dry", is_flag = True,
               help = "Dry run: query api but don't clone/update.")
 @click.option("--basedir", default = TODAY,

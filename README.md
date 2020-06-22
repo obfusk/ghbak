@@ -2,7 +2,7 @@
 
     File        : README.md
     Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-    Date        : 2020-06-20
+    Date        : 2020-06-22
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
     Version     : v0.1.0
@@ -17,9 +17,19 @@
 
 ghbak - github backup
 
-Clone (or update) github repos and/or gists to
-`./{YYYYMMDD}/{github_username}/github/{repo_name}.git` and
-`./{YYYYMMDD}/{github_username}/gist/{gist_id}.git` respectively.
+Mirror (or update) github repos (and issues) and/or gists to:
+
+{basedir}/
+  {github_username}/
+    github/
+      {repo_name}.git
+      {repo_name}-issues.json
+      ...
+    gist/
+      {gist_id}.git
+      ...
+
+The base directory defaults to ./{YYYYMMDD} (the current date).
 
 ## Examples
 
