@@ -10,9 +10,7 @@
 
 <!-- }}}1 -->
 
-<!--
 [![PyPI Version](https://img.shields.io/pypi/v/ghbak.svg)](https://pypi.python.org/pypi/ghbak)
--->
 [![CI](https://github.com/obfusk/ghbak/workflows/CI/badge.svg)](https://github.com/obfusk/ghbak/actions?query=workflow%3ACI)
 [![GPLv3+](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 
