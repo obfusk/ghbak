@@ -5,11 +5,14 @@
     Date        : 2020-06-22
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
-    Version     : v0.1.0
+    Version     : v0.1.3
     License     : GPLv3+
 
 <!-- }}}1 -->
 
+<!--
+[![PyPI Version](https://img.shields.io/pypi/v/ghbak.svg)](https://pypi.python.org/pypi/ghbak)
+-->
 [![CI](https://github.com/obfusk/ghbak/workflows/CI/badge.svg)](https://github.com/obfusk/ghbak/actions?query=workflow%3ACI)
 [![GPLv3+](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 
@@ -71,7 +74,15 @@ Python >= 3.5 + click + requests.
 
 ## Installing
 
-Install the dependencies, as e.g. debian packages or using `pip`:
+### Using pip
+
+```bash
+$ pip install ghbak
+```
+
+### Manually
+
+Install the dependencies (as e.g. debian packages or using `pip`):
 
 ```bash
 $ apt install python3-click python3-requests  # debian/ubuntu
