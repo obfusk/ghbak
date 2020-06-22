@@ -5,7 +5,7 @@
 #
 # File        : ghbak
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-06-20
+# Date        : 2020-06-22
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.1.2
@@ -175,7 +175,10 @@ def save_issues(user, repos, token, verbose, dry):
                          token = token, verbose = verbose)
     text = json.dumps(list(data))
     path = safe_path(gh_dir(user), name, "-issues.json")
-    if not dry: path.write_text(text)
+    if not dry:
+      tmp = path.with_name(path.name + ".tmp")
+      tmp.write_text(text)
+      tmp.rename(path)
 
 @click.command(help = """
   ghbak - github backup
