@@ -5,7 +5,7 @@
     Date        : 2020-06-22
 
     Copyright   : Copyright (C) 2020  Felix C. Stegerman
-    Version     : v0.1.3
+    Version     : v0.1.4
     License     : GPLv3+
 
 <!-- }}}1 -->
@@ -20,6 +20,7 @@ ghbak - github backup
 
 Mirror (or update) github repos (and issues) and/or gists to:
 
+```
 {basedir}/
   {github_username}/
     github/
@@ -29,8 +30,9 @@ Mirror (or update) github repos (and issues) and/or gists to:
     gist/
       {gist_id}.git
       ...
+```
 
-The base directory defaults to ./{YYYYMMDD} (the current date).
+The base directory defaults to `./{YYYYMMDD}` (the current date).
 
 ## Examples
 
