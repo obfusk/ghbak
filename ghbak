@@ -8,7 +8,7 @@
 # Date        : 2020-06-22
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
-# Version     : v0.1.4
+# Version     : v0.1.5
 # License     : GPLv3+
 #
 # --                                                            ; }}}1
@@ -72,7 +72,7 @@ backed up gists: ...
 # * pypi package?
 # * debian package?
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 import json, os, re, subprocess, time
 
@@ -183,6 +183,7 @@ def save_issues(basedir, user, repos, token, verbose, dry):
     text = json.dumps(list(data))
     path = safe_path(gh_dir(basedir, user), name, "-issues.json")
     if not dry:
+      path.parent.mkdir(parents = True, exist_ok = True)
       tmp = path.with_name(path.name + ".tmp")
       tmp.write_text(text)
       tmp.rename(path)
