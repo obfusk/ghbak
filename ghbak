@@ -5,7 +5,7 @@
 #
 # File        : ghbak
 # Maintainer  : Felix C. Stegerman <flx@obfusk.net>
-# Date        : 2020-06-22
+# Date        : 2020-06-24
 #
 # Copyright   : Copyright (C) 2020  Felix C. Stegerman
 # Version     : v0.1.5
@@ -105,9 +105,36 @@ TODAY     = time.strftime("%Y%m%d")
 
 class Error(RuntimeError): pass
 
-def safe_path(parent, name, suffix):
-  if "/" in name: raise Error("unsafe name: " + name)
+def safe_path(parent, name, suffix):                            # {{{1
+  """
+    >>> safe_path("parent", "", ".suffix")
+    Traceback (most recent call last):
+    Error: unsafe name: ''
+    >>> safe_path("parent", "/foo", ".suffix")
+    Traceback (most recent call last):
+    Error: unsafe name: '/foo'
+    >>> safe_path("parent", "foo/", ".suffix")
+    Traceback (most recent call last):
+    Error: unsafe name: 'foo/'
+    >>> safe_path("parent", "foo/bar", ".suffix")
+    Traceback (most recent call last):
+    Error: unsafe name: 'foo/bar'
+    >>> safe_path("parent", ".", ".suffix")
+    Traceback (most recent call last):
+    Error: unsafe name: '.'
+    >>> safe_path("parent", "..", ".suffix")
+    Traceback (most recent call last):
+    Error: unsafe name: '..'
+    >>> safe_path("parent", ".foo", ".suffix")
+    Traceback (most recent call last):
+    Error: unsafe name: '.foo'
+    >>> safe_path("parent", "foo", ".suffix")
+    PosixPath('parent/foo.suffix')
+  """
+  if type(name) is not str or not name or "/" in name or name.startswith("."):
+    raise Error("unsafe name: " + repr(name))
   return Path(parent) / (name + suffix)
+                                                                # }}}1
 
 def gh_dir(basedir, user, gist = False):
   return Path(basedir) / user / ("gist" if gist else "github")
